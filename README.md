@@ -33,7 +33,7 @@ Usage of go-redis-copy:
 
 ### Support Redis Type
 | Type   | export Command | import command        |
-| :------| -------------: | :-------------------: |
+| :------| :------------- | :------------------- |
 | string | get key        | set key               |
 | set    | smembers key   | sadd key ...values    |
 | zset   | zrangebyscore key -inf +inf withscores | zadd key ...scores ...values | 
