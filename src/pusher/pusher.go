@@ -65,7 +65,9 @@ func (p *RedisPusher) loadKey(dump scanner.KeyDump) error {
 	case "zset":
 		var zv []*redis.Z
 		for _, z := range dump.Value.([]redis.Z) {
-			zv = append(zv, &z)
+			newZ := new(redis.Z)
+			*newZ = z
+			zv = append(zv, newZ)
 		}
 		return p.client.ZAdd(ctx, dump.Key, zv...).Err()
 	default:
