@@ -11,13 +11,15 @@ type RedisChecker struct {
 	client       redis.UniversalClient
 	checkChannel <-chan string
 	keyChannel   chan<- string
+	skipCheck    bool
 }
 
-func NewRedisChecker(client redis.UniversalClient, cch <-chan string, kch chan<- string) *RedisChecker {
+func NewRedisChecker(client redis.UniversalClient, cch <-chan string, kch chan<- string, skip bool) *RedisChecker {
 	return &RedisChecker{
 		client:       client,
 		checkChannel: cch,
 		keyChannel:   kch,
+		skipCheck:    skip,
 	}
 }
 
@@ -33,12 +35,16 @@ func (c *RedisChecker) Start(number int) {
 
 func (c *RedisChecker) checkRoutine(wg *sync.WaitGroup) {
 	for key := range c.checkChannel {
-		n, err := c.client.Exists(ctx, key).Result()
-		if err != nil {
-			log.Fatal(err)
-		}
+		if !c.skipCheck {
+			n, err := c.client.Exists(ctx, key).Result()
+			if err != nil {
+				log.Fatal(err)
+			}
 
-		if n == int64(0) {
+			if n == int64(0) {
+				c.keyChannel <- key
+			}
+		} else {
 			c.keyChannel <- key
 		}
 	}

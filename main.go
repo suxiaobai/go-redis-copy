@@ -21,6 +21,7 @@ func main() {
 	checkRoutines := flag.Int("check_pool_size", 30, "check redis exists exector pool size")
 	exportRoutines := flag.Int("pull_pool_size", 30, "get redis info exector pool size")
 	pushRoutines := flag.Int("push_pool_size", 30, "load redis key exector pool size")
+	skipCheck := flag.Bool("skip_check", false, "skip check and copy keys")
 
 	flag.Parse()
 
@@ -44,7 +45,7 @@ func main() {
 
 	waitingGroup := new(sync.WaitGroup)
 
-	redisChecker := pusher.NewRedisChecker(cmd.NewRedisClient(*destination, "", *destinationPassword), redisScanner.GetCheckChannel(), redisScanner.GetKeyChannel())
+	redisChecker := pusher.NewRedisChecker(cmd.NewRedisClient(*destination, "", *destinationPassword), redisScanner.GetCheckChannel(), redisScanner.GetKeyChannel(), *skipCheck)
 	go redisChecker.Start(*checkRoutines)
 
 	redisPusher.Start(waitingGroup, *pushRoutines)
