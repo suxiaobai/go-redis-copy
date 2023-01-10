@@ -37,12 +37,14 @@ func (p *RedisPusher) pushRoutine(wg *sync.WaitGroup) {
 	for dump := range p.dumpChannel {
 		err := p.loadKey(dump)
 		if err != nil {
+			log.Printf("load key error: %v, key: %s\n", err, dump.Key)
 			log.Fatal(err)
 		}
 
 		if dump.Ttl > 0 {
 			err = p.loadKeyTtl(dump)
 			if err != nil {
+				log.Printf("load key ttl error: %v key: %s\n", err, dump.Key)
 				log.Fatal(err)
 			}
 		}
@@ -52,7 +54,6 @@ func (p *RedisPusher) pushRoutine(wg *sync.WaitGroup) {
 }
 
 func (p *RedisPusher) loadKey(dump scanner.KeyDump) error {
-
 	switch dump.Type {
 	case "string":
 		return p.client.Set(ctx, dump.Key, dump.Value, 0).Err()
@@ -61,7 +62,28 @@ func (p *RedisPusher) loadKey(dump scanner.KeyDump) error {
 	case "list":
 		return p.client.LPush(ctx, dump.Key, dump.Value).Err()
 	case "hash":
-		return p.client.HMSet(ctx, dump.Key, dump.Value).Err()
+		if len(dump.Value.(map[string]string)) > 10000 {
+			newH := make(map[string]string)
+			for k, v := range dump.Value.(map[string]string) {
+				newH[k] = v
+				if len(newH) >= 10000 {
+					err := p.client.HMSet(ctx, dump.Key, dump.Value).Err()
+					if err != nil {
+						return err
+					}
+					newH = make(map[string]string)
+				}
+			}
+			if len(newH) > 0 {
+				err := p.client.HMSet(ctx, dump.Key, dump.Value).Err()
+				if err != nil {
+					return err
+				}
+			}
+			return nil
+		} else {
+			return p.client.HMSet(ctx, dump.Key, dump.Value).Err()
+		}
 	case "zset":
 		var zv []*redis.Z
 		for _, z := range dump.Value.([]redis.Z) {
