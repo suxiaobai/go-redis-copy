@@ -121,7 +121,23 @@ func (s *RedisScanner) dumpKey(t string, key string) (interface{}, error) {
 	case "list":
 		return s.client.LRange(ctx, key, 0, -1).Result()
 	case "hash":
-		return s.client.HGetAll(ctx, key).Result()
+		newH := make(map[string]string)
+		iter := s.client.HScan(ctx, key, 0, "*", 10000).Iterator()
+		count := 0
+		var k string
+		for iter.Next(ctx) {
+			if count == 0 {
+				k = iter.Val()
+				count++
+			} else {
+				newH[k] = iter.Val()
+				count = 0
+			}
+		}
+		if err := iter.Err(); err != nil {
+			return newH, err
+		}
+		return newH, nil
 	case "zset":
 		return s.client.ZRangeByScoreWithScores(ctx, key, &redis.ZRangeBy{
 			Min: "-inf",
