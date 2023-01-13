@@ -67,7 +67,7 @@ func (p *RedisPusher) loadKey(dump scanner.KeyDump) error {
 			for k, v := range dump.Value.(map[string]string) {
 				newH[k] = v
 				if len(newH) >= 10000 {
-					err := p.client.HMSet(ctx, dump.Key, dump.Value).Err()
+					err := p.client.HMSet(ctx, dump.Key, newH).Err()
 					if err != nil {
 						return err
 					}
@@ -75,7 +75,7 @@ func (p *RedisPusher) loadKey(dump scanner.KeyDump) error {
 				}
 			}
 			if len(newH) > 0 {
-				err := p.client.HMSet(ctx, dump.Key, dump.Value).Err()
+				err := p.client.HMSet(ctx, dump.Key, newH).Err()
 				if err != nil {
 					return err
 				}
