@@ -43,6 +43,8 @@ func (c *RedisChecker) checkRoutine(wg *sync.WaitGroup) {
 
 			if n == int64(0) {
 				c.keyChannel <- key
+			} else {
+			        log.Printf("skip exists key: %s\n", key)
 			}
 		} else {
 			c.keyChannel <- key
